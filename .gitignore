@@ -1,1 +1,3 @@
 .desktop_pet/
+.pycache/
+*.pyc
