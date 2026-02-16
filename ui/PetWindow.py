@@ -1,5 +1,6 @@
-from PySide2.QtWidgets import QWidget, QLabel
+from PySide2.QtWidgets import QWidget, QLabel, QStackedWidget, QSizePolicy
 from PySide2.QtUiTools import QUiLoader
+from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtCore import QFile, Qt
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QMenu
@@ -19,6 +20,12 @@ class PetWindow(QWidget):
         ui_file.close()
 
         self.setting_page = SetWindow()
+        self.Petlabel = self.ui.findChild(QLabel, "Petlabel")
+
+        self.setting_page.imageChanged.connect(self.update_picture)
+        self.setting_page.sizeChanged.connect(self.update_size)
+
+        self.picture = None
 
         self.init_window()
         self.init_picture()
@@ -35,14 +42,15 @@ class PetWindow(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
     def init_picture(self):
-        picture = self.ui.findChild(QLabel, "Petlabel")
-
-        picture.setPixmap(QPixmap("resource/display/ran.png"))
-
-        picture.setAlignment(Qt.AlignCenter)
+        self.picture = QPixmap("resource/display/ran.png")
+        self.Petlabel.setPixmap(self.picture)
+        
+        self.Petlabel.setAlignment(Qt.AlignCenter)
 
     def open_settings(self):
+        self.setting_page.resize(300, 400)
         self.setting_page.show()
+        self.setting_page.raise_()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -67,6 +75,25 @@ class PetWindow(QWidget):
             QApplication.quit()
         elif action == settings_action:
             self.open_settings()
+
+    def update_picture(self, file_path):
+        picture = self.ui.findChild(QLabel, "Petlabel")
+        picture.setPixmap(QPixmap(file_path))
+        self.picture = QPixmap(file_path)
+
+    def update_size(self, value):
+        ratio = value / 100.0
+        
+        new_picture = self.picture.scaled(
+            self.picture.size() * ratio,
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation
+        )
+
+        self.Petlabel.setPixmap(new_picture)
+        self.Petlabel.adjustSize()
+        self.setFixedSize(new_picture.size())
+
 
 
 
