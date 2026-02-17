@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QWidget, QLabel, QStackedWidget, QSizePolicy
+from PySide2.QtWidgets import QWidget, QLabel, QStackedWidget, QSizePolicy, QInputDialog
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtCore import QFile, Qt
@@ -6,6 +6,7 @@ from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QMenu
 from ui.SetWindow import SetWindow
 from PySide2.QtWidgets import QApplication
+from core.ChatCore import ChatCore
 
 
 
@@ -24,6 +25,8 @@ class PetWindow(QWidget):
 
         self.setting_page.imageChanged.connect(self.update_picture)
         self.setting_page.sizeChanged.connect(self.update_size)
+
+        self.chat_core = ChatCore()
 
         self.picture = None
 
@@ -68,6 +71,7 @@ class PetWindow(QWidget):
 
         settings_action = menu.addAction("Settings")
         exit_action = menu.addAction("Exit")
+        chat_action = menu.addAction("Chat")
 
         action = menu.exec_(event.globalPos())
 
@@ -75,6 +79,14 @@ class PetWindow(QWidget):
             QApplication.quit()
         elif action == settings_action:
             self.open_settings()
+        elif action == chat_action:
+            self.open_chat()
+
+    def open_chat(self):
+        message, ok = QInputDialog.getText(self, "Chat", "请输入您的消息:")
+        if ok:
+            response = self.chat_core.get_response(message)
+            print(response)
 
     def update_picture(self, file_path):
         picture = self.ui.findChild(QLabel, "Petlabel")
