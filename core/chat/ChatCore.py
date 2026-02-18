@@ -1,5 +1,6 @@
 from openai import OpenAI  
 from os import getenv
+from core.util.load_persona import load_persona
 
 class ChatCore:
     def __init__(self):
@@ -10,13 +11,15 @@ class ChatCore:
 
     def get_response(self, message):
         model = "qwen-plus"
+        persona = load_persona("ran")
         message = [
-            {"role": "system", "content": "你的设定是BangDream里面的美竹兰,你将作为用户的挚友，和用户进行对话."},
+            {"role": "system", "content": persona["system_prompt"]},
             {"role": "user", "content": message}
         ]
         response = self.client.chat.completions.create(
             model=model,
-            messages=message
+            messages=message,
+            max_tokens=4096
         )
         return response.choices[0].message.content
 

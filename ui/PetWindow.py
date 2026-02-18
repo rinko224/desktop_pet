@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QWidget, QLabel, QStackedWidget, QSizePolicy, QInputDialog
+from PySide2.QtWidgets import QDialog,QWidget, QLabel, QStackedWidget, QSizePolicy, QInputDialog
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtCore import QFile, Qt
@@ -6,7 +6,8 @@ from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QMenu
 from ui.SetWindow import SetWindow
 from PySide2.QtWidgets import QApplication
-from core.ChatCore import ChatCore
+from core.chat.ChatCore import ChatCore
+from ui.ChatDialog import ChatDialog
 
 
 
@@ -83,8 +84,9 @@ class PetWindow(QWidget):
             self.open_chat()
 
     def open_chat(self):
-        message, ok = QInputDialog.getText(self, "Chat", "请输入您的消息:")
-        if ok:
+        dialog = ChatDialog()
+        if dialog.exec_() == QDialog.Accepted:
+            message = dialog.text_edit.toPlainText()
             response = self.chat_core.get_response(message)
             print(response)
 
