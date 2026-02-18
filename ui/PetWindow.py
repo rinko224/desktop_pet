@@ -8,7 +8,8 @@ from ui.SetWindow import SetWindow
 from PySide2.QtWidgets import QApplication
 from core.chat.ChatCore import ChatCore
 from ui.ChatDialog import ChatDialog
-
+from ui.BubbleWidget import BubbleWidget
+from core.chat.ChatWorker import ChatWorker
 
 
 loader = QUiLoader()
@@ -31,6 +32,8 @@ class PetWindow(QWidget):
 
         self.picture = None
 
+        self.bubble = None
+
         self.init_window()
         self.init_picture()
         
@@ -50,6 +53,12 @@ class PetWindow(QWidget):
         self.Petlabel.setPixmap(self.picture)
         
         self.Petlabel.setAlignment(Qt.AlignCenter)
+
+        self.bubble = BubbleWidget(self, self.chat_core)
+
+        picture_pos = self.Petlabel.geometry()
+        self.bubble.move(picture_pos.x() + picture_pos.width() // 2 - self.bubble.width() // 2, picture_pos.y() + picture_pos.height())
+
 
     def open_settings(self):
         self.setting_page.resize(300, 400)
@@ -87,8 +96,7 @@ class PetWindow(QWidget):
         dialog = ChatDialog()
         if dialog.exec_() == QDialog.Accepted:
             message = dialog.text_edit.toPlainText()
-            response = self.chat_core.get_response(message)
-            print(response)
+            self.bubble.start_chat(message)
 
     def update_picture(self, file_path):
         picture = self.ui.findChild(QLabel, "Petlabel")
@@ -108,6 +116,7 @@ class PetWindow(QWidget):
         self.Petlabel.adjustSize()
         self.setFixedSize(new_picture.size())
 
+    
 
 
 

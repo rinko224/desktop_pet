@@ -19,7 +19,11 @@ class ChatCore:
         response = self.client.chat.completions.create(
             model=model,
             messages=message,
-            max_tokens=4096
+            max_tokens=4096,
+            stream=True
         )
-        return response.choices[0].message.content
+        for chunk in response:
+            if chunk.choices[0].delta.content is not None:
+                yield chunk.choices[0].delta.content
+    
 
