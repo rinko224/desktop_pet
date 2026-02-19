@@ -24,10 +24,10 @@ class SetWindow(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.ui)
 
-        self.picture_choose = self.ui.findChild(QPushButton, "picture_choose")
+        self.picture_choose: QPushButton = self.ui.findChild(QPushButton, "picture_choose")
         self.picture_choose.clicked.connect(self.choose_picture)
 
-        self.size_slider = self.ui.findChild(QSlider, "picture_resize")
+        self.size_slider: QSlider = self.ui.findChild(QSlider, "picture_resize")
         self.size_slider.setMinimum(10)
         self.size_slider.setMaximum(500)
         self.size_slider.setValue(100)

@@ -7,8 +7,16 @@ from core.chat.ChatCore import ChatCore
 
 
 class BubbleWidget(QWidget):
-    def __init__(self, parent=None, chat_core: ChatCore = None):
-        super().__init__(parent)
+    def __init__(self, chat_core: ChatCore = None):
+        super().__init__()
+
+        self.setWindowFlags(
+            Qt.FramelessWindowHint |
+            Qt.Tool |
+            Qt.WindowStaysOnTopHint
+        )
+
+        self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.max_width = 280
         self.padding = 20

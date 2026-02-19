@@ -22,17 +22,21 @@ class PetWindow(QWidget):
         self.ui = loader.load(ui_file, self)
         ui_file.close()
 
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0) 
+        layout.addWidget(self.ui)
+
         self.setting_page = SetWindow()
-        self.Petlabel = self.ui.findChild(QLabel, "Petlabel")
+        self.Petlabel: QLabel = self.ui.findChild(QLabel, "Petlabel")
 
         self.setting_page.imageChanged.connect(self.update_picture)
         self.setting_page.sizeChanged.connect(self.update_size)
 
-        self.chat_core = ChatCore()
+        self.chat_core: ChatCore = ChatCore()
 
-        self.picture = None
+        self.picture: QPixmap = None
 
-        self.bubble = None
+        self.bubble: BubbleWidget = None
 
         self.init_window()
         self.init_picture()
@@ -54,10 +58,11 @@ class PetWindow(QWidget):
         
         self.Petlabel.setAlignment(Qt.AlignCenter)
 
-        self.bubble = BubbleWidget(self, self.chat_core)
+        self.bubble = BubbleWidget(self.chat_core)
 
         picture_pos = self.Petlabel.geometry()
-        self.bubble.move(picture_pos.x() + picture_pos.width() // 2 - self.bubble.width() // 2, picture_pos.y() + picture_pos.height())
+        top_right = picture_pos.topRight()
+        self.bubble.move(top_right.x() + self.bubble.width(), top_right.y() - self.bubble.height() / 2)
 
 
     def open_settings(self):
@@ -115,6 +120,20 @@ class PetWindow(QWidget):
         self.Petlabel.setPixmap(new_picture)
         self.Petlabel.adjustSize()
         self.setFixedSize(new_picture.size())
+
+        self.update_bubble_position()   
+
+    def update_bubble_position(self):
+        top_right_global = self.Petlabel.mapToGlobal(self.Petlabel.rect().topRight())
+
+        target_x = top_right_global.x() - 40 
+        target_y = top_right_global.y() - self.bubble.height() + 10
+
+        self.bubble.move(target_x, target_y)
+    
+    def moveEvent(self, event):
+        super().moveEvent(event)
+        self.update_bubble_position()
 
     
 
