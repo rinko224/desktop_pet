@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QDialog,QWidget, QLabel, QStackedWidget, QSizePolicy, QInputDialog
+from PySide2.QtWidgets import QWidget, QLabel, QStackedWidget, QSizePolicy, QInputDialog
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtCore import QFile, Qt
@@ -8,8 +8,6 @@ from ui.SetWindow import SetWindow
 from PySide2.QtWidgets import QApplication
 from core.chat.ChatCore import ChatCore
 from ui.ChatDialog import ChatDialog
-from ui.BubbleWidget import BubbleWidget
-from core.chat.ChatWorker import ChatWorker
 
 
 loader = QUiLoader()
@@ -36,8 +34,6 @@ class PetWindow(QWidget):
 
         self.picture: QPixmap = None
 
-        self.bubble: BubbleWidget = None
-
         self.init_window()
         self.init_picture()
         
@@ -55,14 +51,8 @@ class PetWindow(QWidget):
     def init_picture(self):
         self.picture = QPixmap("resource/display/ran.png")
         self.Petlabel.setPixmap(self.picture)
-        
+
         self.Petlabel.setAlignment(Qt.AlignCenter)
-
-        self.bubble = BubbleWidget(self.chat_core)
-
-        picture_pos = self.Petlabel.geometry()
-        top_right = picture_pos.topRight()
-        self.bubble.move(top_right.x() + self.bubble.width(), top_right.y() - self.bubble.height() / 2)
 
 
     def open_settings(self):
@@ -98,10 +88,8 @@ class PetWindow(QWidget):
             self.open_chat()
 
     def open_chat(self):
-        dialog = ChatDialog()
-        if dialog.exec_() == QDialog.Accepted:
-            message = dialog.text_edit.toPlainText()
-            self.bubble.start_chat(message)
+        dialog = ChatDialog(self.chat_core)
+        dialog.exec_()
 
     def update_picture(self, file_path):
         picture = self.ui.findChild(QLabel, "Petlabel")
@@ -110,7 +98,7 @@ class PetWindow(QWidget):
 
     def update_size(self, value):
         ratio = value / 100.0
-        
+
         new_picture = self.picture.scaled(
             self.picture.size() * ratio,
             Qt.KeepAspectRatio,
@@ -120,20 +108,6 @@ class PetWindow(QWidget):
         self.Petlabel.setPixmap(new_picture)
         self.Petlabel.adjustSize()
         self.setFixedSize(new_picture.size())
-
-        self.update_bubble_position()   
-
-    def update_bubble_position(self):
-        top_right_global = self.Petlabel.mapToGlobal(self.Petlabel.rect().topRight())
-
-        target_x = top_right_global.x() - 40 
-        target_y = top_right_global.y() - self.bubble.height() + 10
-
-        self.bubble.move(target_x, target_y)
-    
-    def moveEvent(self, event):
-        super().moveEvent(event)
-        self.update_bubble_position()
 
     
 

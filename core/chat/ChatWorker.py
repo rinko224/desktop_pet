@@ -4,7 +4,7 @@ from core.chat.ChatCore import ChatCore
 
 class ChatWorker(QThread):
     next_text_chunk = Signal(str)
-    finished_signal = Signal()
+    finished = Signal()
 
     def __init__(self, Chatcore: ChatCore, message):
         super().__init__()
@@ -14,4 +14,4 @@ class ChatWorker(QThread):
     def run(self):
         for chunk in self.chatcore.get_response(self.message):
             self.next_text_chunk.emit(chunk)
-        self.finished_signal.emit()
+        self.finished.emit()
