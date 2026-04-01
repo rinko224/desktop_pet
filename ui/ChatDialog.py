@@ -25,6 +25,8 @@ class ChatDialog(QDialog):
 
         self.chat_core = chat_core or ChatCore()
 
+        self.message_history = [] 
+
         # 获取UI组件
         self.scroll_area = self.ui.findChild(QScrollArea, "scrollArea")
         self.text_edit = self.ui.findChild(QTextEdit, "text_edit")
@@ -50,6 +52,8 @@ class ChatDialog(QDialog):
         message = self.text_edit.toPlainText().strip()
         if not message:
             return
+        
+        self.message_history.append({"role": "user", "content": message})
 
         # 清空输入框
         self.text_edit.clear()
@@ -64,7 +68,7 @@ class ChatDialog(QDialog):
         self.ai_label = self.add_message("", is_user=False)
 
         # 启动聊天worker
-        self.worker = ChatWorker(self.chat_core, message)
+        self.worker = ChatWorker(self.chat_core, self.message_history)
         self.worker.next_text_chunk.connect(self.append_ai_response)
         self.worker.finished.connect(self.on_chat_finished)
         self.worker.start()
@@ -131,12 +135,14 @@ class ChatDialog(QDialog):
         """流式添加AI回复"""
         current = self.ai_label.text()
         self.ai_label.setText(current + chunk)
-
+        
         # 自动滚动
         self.scroll_to_bottom()
 
-    def on_chat_finished(self):
+    def on_chat_finished(self, full_response):
         """聊天结束"""
+        self.message_history.append({"role": "assistant", "content": full_response})
+        self.response_onetime = ""
         self.send_btn.setEnabled(True)
 
     def remove_spacer(self):

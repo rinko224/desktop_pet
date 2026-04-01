@@ -9,12 +9,12 @@ class ChatCore:
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
 
-    def get_response(self, message):
+    def get_response(self, message_history):
         model = "qwen-plus"
         persona = load_persona("ran")
         message = [
             {"role": "system", "content": persona["system_prompt"]},
-            {"role": "user", "content": message}
+            *message_history
         ]
         response = self.client.chat.completions.create(
             model=model,
@@ -25,5 +25,4 @@ class ChatCore:
         for chunk in response:
             if chunk.choices[0].delta.content is not None:
                 yield chunk.choices[0].delta.content
-    
 

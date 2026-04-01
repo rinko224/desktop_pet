@@ -88,8 +88,8 @@ class PetWindow(QWidget):
             self.open_chat()
 
     def open_chat(self):
-        dialog = ChatDialog(self.chat_core)
-        dialog.exec_()
+        self.chat_dialog = ChatDialog(self.chat_core)
+        self.chat_dialog.show()
 
     def update_picture(self, file_path):
         picture = self.ui.findChild(QLabel, "Petlabel")
