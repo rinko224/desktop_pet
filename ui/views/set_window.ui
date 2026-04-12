@@ -57,23 +57,118 @@
        <property name="title">
         <string>形象设置</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="6,4,1">
-        <property name="sizeConstraint">
-         <enum>QLayout::SetDefaultConstraint</enum>
-        </property>
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="4,2,1">
         <item>
-         <widget class="QPushButton" name="picture_choose">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Ignored">
-            <horstretch>1</horstretch>
-            <verstretch>1</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>选择图片</string>
-          </property>
-         </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_mode">
+          <item>
+           <widget class="QRadioButton" name="radio_manual">
+            <property name="text">
+             <string>手动选择</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radio_char_random">
+            <property name="text">
+             <string>指定角色随机衣服</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radio_all_random">
+            <property name="text">
+             <string>全部随机</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
+
+        <item>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>选择人物</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="character">
+            <item><property name="text"><string>户山香澄</string></property></item>
+            <item><property name="text"><string>花园多惠</string></property></item>
+            <item><property name="text"><string>牛込里美</string></property></item>
+            <item><property name="text"><string>山吹沙绫</string></property></item>
+            <item><property name="text"><string>市谷有咲</string></property></item>
+
+            <item><property name="text"><string>美竹兰</string></property></item>
+            <item><property name="text"><string>青叶摩卡</string></property></item>
+            <item><property name="text"><string>上原绯玛丽</string></property></item>
+            <item><property name="text"><string>宇田川巴</string></property></item>
+            <item><property name="text"><string>羽泽鸫</string></property></item>
+
+            <item><property name="text"><string>丸山彩</string></property></item>
+            <item><property name="text"><string>冰川日菜</string></property></item>
+            <item><property name="text"><string>白鹭千圣</string></property></item>
+            <item><property name="text"><string>大和麻弥</string></property></item>
+            <item><property name="text"><string>若宫伊芙</string></property></item>
+
+            <item><property name="text"><string>湊友希那</string></property></item>
+            <item><property name="text"><string>冰川纱夜</string></property></item>
+            <item><property name="text"><string>今井莉莎</string></property></item>
+            <item><property name="text"><string>宇田川亚子</string></property></item>
+            <item><property name="text"><string>白金燐子</string></property></item>
+
+            <item><property name="text"><string>弦卷心</string></property></item>
+            <item><property name="text"><string>濑田薰</string></property></item>
+            <item><property name="text"><string>北泽育美</string></property></item>
+            <item><property name="text"><string>松原花音</string></property></item>
+            <item><property name="text"><string>奥泽美咲</string></property></item>
+
+            <item><property name="text"><string>仓田真白</string></property></item>
+            <item><property name="text"><string>桐谷透子</string></property></item>
+            <item><property name="text"><string>广町七深</string></property></item>
+            <item><property name="text"><string>二叶筑紫</string></property></item>
+            <item><property name="text"><string>八潮瑠唯</string></property></item>
+
+            <item><property name="text"><string>和奏瑞依</string></property></item>
+            <item><property name="text"><string>朝日六花</string></property></item>
+            <item><property name="text"><string>佐藤益木</string></property></item>
+            <item><property name="text"><string>鳰原令王那</string></property></item>
+            <item><property name="text"><string>珠手知由</string></property></item>
+
+            <item><property name="text"><string>高松灯</string></property></item>
+            <item><property name="text"><string>千早爱音</string></property></item>
+            <item><property name="text"><string>要乐奈</string></property></item>
+            <item><property name="text"><string>长崎爽世</string></property></item>
+            <item><property name="text"><string>椎名立希</string></property></item>
+           </widget>
+          </item>
+
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>服装选择</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="costume"/>
+          </item>
+
+          <item row="2" column="1">
+           <widget class="QPushButton" name="confirm_costume">
+            <property name="text">
+             <string>确认修改</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+
         <item>
          <widget class="QSlider" name="picture_resize">
           <property name="sizePolicy">
@@ -87,6 +182,7 @@
           </property>
          </widget>
         </item>
+
         <item>
          <widget class="QLabel" name="label">
           <property name="sizePolicy">
@@ -103,6 +199,7 @@
           </property>
          </widget>
         </item>
+
        </layout>
       </widget>
      </item>

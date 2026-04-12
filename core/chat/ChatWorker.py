@@ -5,6 +5,7 @@ from core.chat.ChatCore import ChatCore
 class ChatWorker(QThread):
     next_text_chunk = Signal(str)
     finished = Signal(str)
+    emotion = Signal(str)
 
     def __init__(self, Chatcore: ChatCore, message_history):
         super().__init__()
@@ -17,3 +18,4 @@ class ChatWorker(QThread):
             full_response += chunk
             self.next_text_chunk.emit(chunk)
         self.finished.emit(full_response)
+        self.emotion.emit(self.chatcore.emotion)
