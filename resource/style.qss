@@ -1,0 +1,158 @@
+/* 全局样式 */
+QWidget {
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 14px;
+    color: #333333;
+}
+
+/* 滚动条美化 */
+QScrollBar:vertical {
+    border: none;
+    background: transparent;
+    width: 8px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #cccccc;
+    min-height: 30px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #aaaaaa;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+/* 按钮样式 */
+QPushButton {
+    background-color: #07B53A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: bold;
+}
+
+QPushButton:hover {
+    background-color: #06a132;
+}
+
+QPushButton:pressed {
+    background-color: #05902b;
+}
+
+QPushButton:disabled {
+    background-color: #e0e0e0;
+    color: #aaaaaa;
+}
+
+/* 输入框样式 */
+QTextEdit, QLineEdit {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QTextEdit:focus, QLineEdit:focus {
+    border: 1px solid #07B53A;
+}
+
+/* 下拉框样式 */
+QComboBox {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 5px 10px;
+    background: white;
+}
+
+QComboBox:hover {
+    border-color: #07B53A;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #888888;
+    margin-right: 5px;
+}
+
+/* 滑块样式 */
+QSlider::groove:horizontal {
+    border: 1px solid #e0e0e0;
+    height: 6px;
+    background: #f0f0f0;
+    margin: 2px 0;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: #07B53A;
+    border: 2px solid #ffffff;
+    width: 16px;
+    height: 16px;
+    margin: -6px 0;
+    border-radius: 8px;
+}
+
+/* 单选框样式 */
+QRadioButton::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    border: 2px solid #e0e0e0;
+}
+
+QRadioButton::indicator:checked {
+    background-color: #07B53A;
+    border: 2px solid #07B53A;
+}
+
+/* 分组框样式 */
+QGroupBox {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    background-color: #ffffff;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 10px;
+    padding: 0 5px;
+    color: #07B53A;
+    font-weight: bold;
+}
+
+/* 聊天气泡基础样式 */
+.ChatBubble {
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.UserBubble {
+    background-color: #95EC69;
+    color: #000000;
+}
+
+.AiBubble {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    color: #333333;
+}

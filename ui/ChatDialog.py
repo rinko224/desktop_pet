@@ -1,118 +1,234 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QLabel, QWidget, QScrollArea, QHBoxLayout, QSizePolicy
-from PySide2.QtCore import Qt, QFile, QSize
-from PySide2.QtUiTools import QUiLoader
-from PySide2.QtGui import QIcon, QColor, QPalette, QPixmap
+from PySide2.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QWidget,
+    QSizePolicy, QFrame
+)
+from PySide2.QtCore import Qt, QSize
+from PySide2.QtGui import QColor, QPixmap, QPainter, QPainterPath, QIcon
+from qfluentwidgets import (
+    PrimaryPushButton, TextEdit, SmoothScrollArea,
+    ToolButton, FluentIcon, CardWidget
+)
 from core.chat.ChatCore import ChatCore
 from core.chat.ChatWorker import ChatWorker
-import json
+from pathlib import Path
 
-
-CHAT_QSS = """
-QDialog {
-    background-color: #f5f5f5;
-}
-
-QScrollArea {
-    background-color: white;
-    border: none;
-}
-
-QTextEdit {
-    background-color: white;
-    border: none;
-    border-top: 1px solid #e0e0e0;
-    padding: 10px;
-    font-family: "Microsoft YaHei", sans-serif;
-    font-size: 14px;
-}
-
-QPushButton {
-    background-color: #07B53A;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    padding: 10px 20px;
-    font-weight: bold;
-}
-
-QPushButton:hover {
-    background-color: #06a132;
-}
-
-QPushButton:pressed {
-    background-color: #05902b;
-}
-
-QPushButton:disabled {
-    background-color: #cccccc;
-    color: #888888;
-}
-"""
-
-
-USER_BUBBLE = """
-QLabel {
-    background-color: #95EC69;
-    border-radius: 15px;
-    padding: 10px 14px;
-    color: #000000;
-    font-size: 14px;
-    font-weight: bold;
-}"""
-
-AI_BUBBLE = """
-QLabel {
-    background-color: #FFFFFF;
-    border: 1px solid #e0e0e0;
-    border-radius: 15px;
-    padding: 10px 14px;
-    color: #333333;
-    font-size: 14px;
-    font-weight: bold;
-}"""
-
-# 气泡最大宽度占比（相对于对话框宽度）
 BUBBLE_MAX_WIDTH_RATIO = 0.7
+
+
+class AvatarLabel(QLabel):
+    """圆形头像标签"""
+    def __init__(self, image_path, size=40):
+        super().__init__()
+        self.setFixedSize(size, size)
+        self.size = size
+        self.update_avatar(image_path)
+
+    def update_avatar(self, image_path):
+        pixmap = QPixmap(image_path)
+        if pixmap.isNull():
+            pixmap = QPixmap(self.size, self.size)
+            pixmap.fill(QColor("#cccccc"))
+
+        pixmap = pixmap.scaled(
+            self.size, self.size,
+            Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation
+        )
+
+        rounded_pixmap = QPixmap(self.size, self.size)
+        rounded_pixmap.fill(Qt.transparent)
+
+        painter = QPainter(rounded_pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.addEllipse(0, 0, self.size, self.size)
+        painter.setClipPath(path)
+        painter.drawPixmap(0, 0, pixmap)
+        painter.end()
+
+        self.setPixmap(rounded_pixmap)
+
+
+class ChatBubble(QFrame):
+    """聊天气泡（固定颜色，不受重绘影响）"""
+    def __init__(self, text, is_user=False, parent=None):
+        super().__init__(parent)
+        self.is_user = is_user
+        self.setFrameStyle(QFrame.NoFrame)
+
+        self.label = QLabel(text, self)
+        self.label.setWordWrap(True)
+        self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.label.setStyleSheet("background: transparent; border: none;")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.addWidget(self.label)
+
+        self.setMaximumWidth(400)
+
+        bg = "#0078D4" if is_user else "#F3F3F3"
+        fg = "white" if is_user else "#1A1A1A"
+        self.setStyleSheet(f"""
+            ChatBubble {{
+                background-color: {bg};
+                border-radius: 12px;
+                border: none;
+            }}
+            QLabel {{
+                color: {fg};
+                font-size: 14px;
+                background: transparent;
+                border: none;
+            }}
+        """)
+
+    def text(self):
+        return self.label.text()
+
+    def setText(self, text):
+        self.label.setText(text)
 
 
 class ChatDialog(QDialog):
     def __init__(self, chat_core: ChatCore = None):
         super().__init__()
 
-        self.setStyleSheet(CHAT_QSS)
-
-        ui_file = QFile("ui/views/chat_dialog.ui")
-        ui_file.open(QFile.ReadOnly)
-        self.ui = Loader.load(ui_file)
-        ui_file.close()
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.ui)
-
         self.setWindowTitle("与桌宠聊天")
         self.setWindowIcon(QIcon("resource/display/ran.ico"))
-        self.resize(600, 600)
+        self.resize(600, 750)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #FAFAFA;
+            }
+        """)
 
-        self.chat_core = chat_core or ChatCore()
+        # 主布局
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        self.message_history = [] 
+        # ===== 聊天滚动区域 =====
+        self.scroll_area = SmoothScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("""
+            SmoothScrollArea {
+                border: none;
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background: transparent;
+                width: 8px;
+            }
+            QScrollBar::handle:vertical {
+                background: #CCCCCC;
+                border-radius: 4px;
+                min-height: 30px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #AAAAAA;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
 
-        self.emotion = "neutral"  # 当前对话情感状态
+        self.chat_container = QWidget()
+        self.chat_layout = QVBoxLayout(self.chat_container)
+        self.chat_layout.setAlignment(Qt.AlignTop)
+        self.chat_layout.setSpacing(12)
+        self.chat_layout.setContentsMargins(15, 15, 15, 15)
+        self.chat_layout.addStretch()
 
-        # 获取UI组件
-        self.scroll_area = self.ui.findChild(QScrollArea, "scrollArea")
-        self.text_edit = self.ui.findChild(QTextEdit, "text_edit")
-        self.send_btn = self.ui.findChild(QPushButton, "send_btn")
+        self.scroll_area.setWidget(self.chat_container)
+        main_layout.addWidget(self.scroll_area, 1)
 
-        # 获取聊天布局
-        self.chat_layout = self.ui.findChild(QVBoxLayout, "chat_layout")
+        # ===== 底部输入卡片（微信风格） =====
+        bottom_card = CardWidget()
+        bottom_card.setBorderRadius(0)
+        bottom_card.setStyleSheet("""
+            CardWidget {
+                background-color: #F7F7F7;
+                border-top: 1px solid #E0E0E0;
+            }
+        """)
 
-        # 发送按钮事件
+        bottom_layout = QVBoxLayout(bottom_card)
+        bottom_layout.setContentsMargins(12, 10, 12, 12)
+        bottom_layout.setSpacing(8)
+
+        # --- 工具栏（图标按钮） ---
+        toolbar = QHBoxLayout()
+        toolbar.setSpacing(8)
+
+        # 占位图标：HEART 后续可替换为自定义表情图标资源
+        self.btn_emoji = ToolButton(FluentIcon.HEART)
+        self.btn_emoji.setToolTip("发送表情")
+        self.btn_emoji.clicked.connect(self.on_emoji_clicked)
+
+        self.btn_screenshot = ToolButton(FluentIcon.CLIPPING_TOOL)
+        self.btn_screenshot.setToolTip("截图")
+        self.btn_screenshot.clicked.connect(self.on_screenshot_clicked)
+
+        self.btn_file = ToolButton(FluentIcon.FOLDER)
+        self.btn_file.setToolTip("上传文件")
+        self.btn_file.clicked.connect(self.on_file_clicked)
+
+        # 占位按钮，后续可扩展
+        self.btn_image = ToolButton(FluentIcon.PHOTO)
+        self.btn_image.setToolTip("发送图片")
+        self.btn_image.clicked.connect(self.on_image_clicked)
+
+        toolbar.addWidget(self.btn_emoji)
+        toolbar.addWidget(self.btn_screenshot)
+        toolbar.addWidget(self.btn_file)
+        toolbar.addWidget(self.btn_image)
+        toolbar.addStretch()
+
+        bottom_layout.addLayout(toolbar)
+
+        # --- 输入框 + 发送按钮 ---
+        input_layout = QHBoxLayout()
+        input_layout.setSpacing(10)
+
+        self.text_edit = TextEdit(self)
+        self.text_edit.setPlaceholderText("输入消息...")
+        self.text_edit.setFixedHeight(80)
+        self.text_edit.installEventFilter(self)
+
+        self.send_btn = PrimaryPushButton("发送", self)
+        self.send_btn.setFixedSize(70, 80)
         self.send_btn.clicked.connect(self.send_message)
 
-        # 输入框回车发送（Shift+回车换行）
-        self.text_edit.installEventFilter(self)
+        input_layout.addWidget(self.text_edit)
+        input_layout.addWidget(self.send_btn)
+        bottom_layout.addLayout(input_layout)
+
+        main_layout.addWidget(bottom_card, 0)
+
+        # ===== 数据初始化 =====
+        self.chat_core = chat_core or ChatCore()
+        self.message_history = []
+        self.emotion = "neutral"
+        self.user_avatar_path = "resource/display/ran.png"
+        self.pet_avatar_path = "resource/display/ran.png"
+        self.ai_label = None
+
+    # ===== 工具栏占位槽函数 =====
+    def on_emoji_clicked(self):
+        """表情按钮点击（占位）"""
+        print("[ui] 表情选择器（待实现）")
+
+    def on_screenshot_clicked(self):
+        """截图按钮点击（占位）"""
+        print("[ui] 截图功能（待实现）")
+
+    def on_file_clicked(self):
+        """文件上传按钮点击（占位）"""
+        print("[ui] 文件上传（待实现）")
+
+    def on_image_clicked(self):
+        """图片发送按钮点击（占位）"""
+        print("[ui] 图片发送（待实现）")
 
     def eventFilter(self, obj, event):
         if obj == self.text_edit and event.type() == event.KeyPress:
@@ -122,177 +238,112 @@ class ChatDialog(QDialog):
         return super().eventFilter(obj, event)
 
     def resizeEvent(self, event):
-        """窗口大小改变时更新气泡最大宽度"""
         super().resizeEvent(event)
-        self.update_bubble_max_width()
-        # 强制重新布局并更新
-        self.chat_layout.activate()
-        self.update()
-
-    def get_bubble_max_width(self):
-        """根据窗口宽度计算气泡最大宽度"""
-        return int(self.width() * BUBBLE_MAX_WIDTH_RATIO)
-
-    def update_bubble_max_width(self):
-        """更新所有气泡的最大宽度"""
-        max_width = self.get_bubble_max_width()
+        max_width = int(self.width() * BUBBLE_MAX_WIDTH_RATIO)
         for i in range(self.chat_layout.count()):
             item = self.chat_layout.itemAt(i)
             if item and item.widget():
                 container = item.widget()
-                # 只更新 label 的最大宽度，让容器保持原有的 sizePolicy
-                for j in range(container.layout().count()):
-                    child = container.layout().itemAt(j)
-                    if child and child.widget() and isinstance(child.widget(), QLabel):
-                        child.widget().setMaximumWidth(max_width)
+                layout = container.layout()
+                if not layout:
+                    continue
+                for j in range(layout.count()):
+                    child_item = layout.itemAt(j)
+                    if child_item and child_item.widget():
+                        child = child_item.widget()
+                        if isinstance(child, ChatBubble):
+                            child.setMaximumWidth(max_width)
 
     def send_message(self):
         message = self.text_edit.toPlainText().strip()
         if not message:
             return
-        
+
         self.message_history.append({"role": "user", "content": message})
-
-        # 清空输入框
         self.text_edit.clear()
-
-        # 添加用户消息（右侧）
         self.add_message(message, is_user=True)
-
-        # 禁用发送按钮
         self.send_btn.setEnabled(False)
-
-        # 创建AI回复标签（左侧）
         self.ai_label = self.add_message("", is_user=False)
 
-        # 启动聊天worker
         self.worker = ChatWorker(self.chat_core, self.message_history)
         self.worker.emotion.connect(self.on_emotion)
-
         self.worker.next_text_chunk.connect(self.append_ai_response)
         self.worker.finished.connect(self.on_chat_finished)
-
         self.worker.start()
 
-    def add_message(self, text, is_user: bool) -> QLabel:
+    def add_message(self, text, is_user: bool) -> ChatBubble:
         """添加消息到聊天区域"""
-        label = QLabel(text)
-        label.setWordWrap(True)
-        label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        label.setMaximumWidth(self.get_bubble_max_width())
+        bubble = ChatBubble(text, is_user)
+        bubble.setMaximumWidth(int(self.width() * BUBBLE_MAX_WIDTH_RATIO))
 
-        # 用户消息样式（右侧，绿色气泡）
-        if is_user:
-            label.setStyleSheet(USER_BUBBLE)
-            label.setAlignment(Qt.AlignLeft)
-        else:
-            # AI消息样式（左侧，白色气泡）
-            label.setStyleSheet(AI_BUBBLE)
-            label.setAlignment(Qt.AlignLeft)
-
-        # 用水平容器控制左右对齐
         container = QWidget()
         container_layout = QHBoxLayout(container)
-        container_layout.setContentsMargins(0, 0, 0, 0)
-        container_layout.setSpacing(0)
+        container_layout.setContentsMargins(5, 2, 5, 2)
+        container_layout.setSpacing(10)
+
+        avatar_path = self.user_avatar_path if is_user else self.pet_avatar_path
+        avatar = AvatarLabel(avatar_path, size=40)
 
         if is_user:
-            # 用户消息：stretch 在左边，推到右边
             container_layout.addStretch()
-            container_layout.addWidget(label)
-            # 用户气泡可以扩展
-            container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            container_layout.addWidget(bubble)
+            container_layout.addWidget(avatar, alignment=Qt.AlignTop)
         else:
-            # AI消息：stretch 在右边，保持左边对齐
-            container_layout.addWidget(label)
+            container_layout.addWidget(avatar, alignment=Qt.AlignTop)
+            container_layout.addWidget(bubble)
             container_layout.addStretch()
-            # AI气泡使用 Preferred，让它根据内容自适应
-            container.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
 
-        # 移除底部 spacer，添加消息，再添加 spacer
         self.remove_spacer()
         self.chat_layout.addWidget(container)
         self.add_spacer()
-
-        # 滚动到底部
         self.scroll_to_bottom()
 
-        return label
+        return bubble
 
     def append_ai_response(self, chunk):
-        """流式添加AI回复"""
-        current = self.ai_label.text()
-        self.ai_label.setText(current + chunk)
-
-        # 自动滚动
-        self.scroll_to_bottom()
+        if self.ai_label:
+            self.ai_label.setText(self.ai_label.text() + chunk)
+            self.scroll_to_bottom()
 
     def on_chat_finished(self, full_response):
-        """聊天结束"""
         self.message_history.append({"role": "assistant", "content": full_response})
-        self.response_onetime = ""
         self.send_btn.setEnabled(True)
 
     def on_emotion(self, emotion):
-        """接收情感状态更新并发出对应表情图片"""
         self.emotion = emotion
-        print(f"[info] 当前情感状态: {emotion}")
-
-        if(emotion == "neutral"):
-            return
-        # 情感对应的表情图片路径（先写死）
         emotion_images = {
-            "anger": "resource/emoji/anger.png",
-            "joy": "resource/emoji/joy.png",
-            "sad": "resource/emoji/sad.png",
-            "fear": "resource/emoji/fear.png",
-            "surprise": "resource/emoji/surprise.png",
+            "anger": "resource/emoji/anger/anger.png",
+            "joy": "resource/emoji/joy/joy.png",
+            "sad": "resource/emoji/sad/sad.png",
+            "fear": "resource/emoji/fear/fear.png",
+            "surprise": "resource/emoji/surprise/surprise.png",
         }
-
         image_path = emotion_images.get(emotion)
         if image_path:
             self.emit_emotion_image(image_path)
 
     def emit_emotion_image(self, image_path):
-        """在聊天区域显示表情图片"""
-        from pathlib import Path
         if not Path(image_path).exists():
-            print(f"[warning] 表情图片不存在: {image_path}")
             return
-
-        # 加载图片
         pixmap = QPixmap(image_path)
         if pixmap.isNull():
-            print(f"[warning] 加载图片失败: {image_path}")
             return
 
-        # 创建显示图片的标签
         image_label = QLabel()
         image_label.setPixmap(pixmap)
-        image_label.setScaledContents(False)
 
-        # 用水平容器控制左右对齐
         container = QWidget()
         container_layout = QHBoxLayout(container)
-        container_layout.setContentsMargins(0, 0, 0, 0)
-        container_layout.setSpacing(0)
-
-        # AI图片：左边对齐
+        container_layout.setContentsMargins(55, 5, 5, 5)
         container_layout.addWidget(image_label)
         container_layout.addStretch()
-        container.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
 
-        # 添加到聊天布局
         self.remove_spacer()
         self.chat_layout.addWidget(container)
         self.add_spacer()
-
-        # 滚动到底部
         self.scroll_to_bottom()
 
-
     def remove_spacer(self):
-        """移除底部 spacer"""
         for i in range(self.chat_layout.count()):
             item = self.chat_layout.itemAt(i)
             if item.spacerItem():
@@ -300,14 +351,8 @@ class ChatDialog(QDialog):
                 break
 
     def add_spacer(self):
-        """添加底部 spacer"""
         self.chat_layout.addStretch()
 
     def scroll_to_bottom(self):
-        """滚动到最底部"""
-        self.scroll_area.verticalScrollBar().setValue(
-            self.scroll_area.verticalScrollBar().maximum()
-        )
-
-
-Loader = QUiLoader()
+        scrollbar = self.scroll_area.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())

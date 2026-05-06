@@ -1,11 +1,12 @@
-from PySide2.QtWidgets import QWidget, QLabel, QStackedWidget, QSizePolicy, QInputDialog
+from PySide2.QtWidgets import (
+    QWidget, QLabel, QStackedWidget, QSizePolicy, QInputDialog,
+    QVBoxLayout, QApplication
+)
 from PySide2.QtUiTools import QUiLoader
-from PySide2.QtWidgets import QVBoxLayout
 from PySide2.QtCore import QFile, Qt, QThread, Signal
 from PySide2.QtGui import QPixmap
-from PySide2.QtWidgets import QMenu
+from qfluentwidgets import RoundMenu, Action, FluentIcon
 from ui.SetWindow import SetWindow
-from PySide2.QtWidgets import QApplication
 from core.chat.ChatCore import ChatCore
 from ui.ChatDialog import ChatDialog
 from core.LiveSD.Live import LiveSDManager
@@ -171,23 +172,28 @@ class PetWindow(QWidget):
             event.accept()
 
     def contextMenuEvent(self, event):
-        menu = QMenu(self)
+        menu = RoundMenu(parent=self)
 
-        settings_action = menu.addAction("Settings")
-        exit_action = menu.addAction("Exit")
-        chat_action = menu.addAction("Chat")
+        settings_action = Action(FluentIcon.SETTING, "设置", self)
+        chat_action = Action(FluentIcon.CHAT, "聊天", self)
+        exit_action = Action(FluentIcon.CLOSE, "退出", self)
 
-        action = menu.exec_(event.globalPos())
+        menu.addAction(settings_action)
+        menu.addAction(chat_action)
+        menu.addSeparator()
+        menu.addAction(exit_action)
 
-        if action == exit_action:
-            QApplication.quit()
-        elif action == settings_action:
-            self.open_settings()
-        elif action == chat_action:
-            self.open_chat()
+        # 连接信号
+        settings_action.triggered.connect(self.open_settings)
+        chat_action.triggered.connect(self.open_chat)
+        exit_action.triggered.connect(QApplication.quit)
+
+        menu.exec_(event.globalPos())
 
     def open_chat(self):
         self.chat_dialog = ChatDialog(self.chat_core)
+        if CACHE_PATH.exists():
+            self.chat_dialog.pet_avatar_path = str(CACHE_PATH)
         self.chat_dialog.show()
 
     def update_picture(self, costume_id):

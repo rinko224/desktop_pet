@@ -1,134 +1,18 @@
-from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QFileDialog, QSlider, QComboBox, QRadioButton
+from PySide2.QtWidgets import (
+    QWidget, QFileDialog, QVBoxLayout, QHBoxLayout,
+    QFormLayout, QScrollArea, QSizePolicy
+)
 from PySide2.QtGui import QIcon
-from PySide2.QtUiTools import QUiLoader
-from PySide2.QtWidgets import QVBoxLayout
-from PySide2.QtCore import QFile, Qt, Signal
+from PySide2.QtCore import Qt, Signal
+from qfluentwidgets import (
+    PushButton, PrimaryPushButton, ComboBox,
+    RadioButton, Slider, CardWidget,
+    SubtitleLabel, StrongBodyLabel, BodyLabel,
+    SmoothScrollArea
+)
 from bestdori_ext import Character
 
 
-STYLE_QSS = """
-QWidget {
-    background-color: #f5f5f5;
-    color: #333333;
-    font-family: "Microsoft YaHei", sans-serif;
-    font-size: 14px;
-}
-
-QGroupBox {
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    margin-top: 10px;
-    padding: 10px;
-    background-color: white;
-}
-
-QGroupBox::title {
-    color: #07B53A;
-    subcontrol-origin: margin;
-    subcontrol-position: top left;
-    padding: 0 5px;
-    font-weight: bold;
-}
-
-QPushButton {
-    background-color: #07B53A;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    padding: 10px 24px;
-    font-weight: bold;
-    min-width: 80px;
-}
-
-QPushButton:hover {
-    background-color: #06a132;
-}
-
-QPushButton:pressed {
-    background-color: #05902b;
-}
-
-QComboBox {
-    background-color: white;
-    color: #333333;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 8px 12px;
-    min-height: 32px;
-}
-
-QComboBox:hover {
-    border-color: #07B53A;
-}
-
-QComboBox::drop-down {
-    border: none;
-    width: 24px;
-}
-
-QComboBox::down-arrow {
-    image: none;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 6px solid #888888;
-    margin-right: 8px;
-}
-
-QLabel {
-    color: #666666;
-    font-weight: bold;
-}
-
-QSlider::groove:horizontal {
-    background: #e0e0e0;
-    height: 6px;
-    border-radius: 3px;
-}
-
-QSlider::handle:horizontal {
-    background: #07B53A;
-    width: 18px;
-    height: 18px;
-    margin: -6px 0;
-    border-radius: 9px;
-    border: 2px solid white;
-}
-
-QSlider::handle:horizontal:hover {
-    background: #06a132;
-}
-
-QSlider::sub-page:horizontal {
-    background: #07B53A;
-    border-radius: 3px;
-}
-
-QRadioButton {
-    color: #333333;
-    spacing: 8px;
-}
-
-QRadioButton::indicator {
-    width: 18px;
-    height: 18px;
-    border-radius: 9px;
-    border: 2px solid #e0e0e0;
-    background-color: white;
-}
-
-QRadioButton::indicator:checked {
-    background-color: #07B53A;
-    border: 2px solid #07B53A;
-}
-
-QRadioButton::indicator:checked:hover {
-    background-color: #06a132;
-    border: 2px solid #06a132;
-}
-"""
-
-
-loader = QUiLoader()
 class SetWindow(QWidget):
     imageChanged = Signal(int)
     sizeChanged = Signal(int)
@@ -142,62 +26,180 @@ class SetWindow(QWidget):
     MODE_CHAR_RANDOM = 1
     MODE_ALL_RANDOM = 2
 
+    # 角色列表（与 ui 文件中的顺序一致）
+    CHARACTER_NAMES = [
+        "户山香澄", "花园多惠", "牛込里美", "山吹沙绫", "市谷有咲",
+        "美竹兰", "青叶摩卡", "上原绯玛丽", "宇田川巴", "羽泽鸫",
+        "丸山彩", "冰川日菜", "白鹭千圣", "大和麻弥", "若宫伊芙",
+        "湊友希那", "冰川纱夜", "今井莉莎", "宇田川亚子", "白金燐子",
+        "弦卷心", "濑田薰", "北泽育美", "松原花音", "奥泽美咲",
+        "仓田真白", "桐谷透子", "广町七深", "二叶筑紫", "八潮瑠唯",
+        "和奏瑞依", "朝日六花", "佐藤益木", "鳰原令王那", "珠手知由",
+        "高松灯", "千早爱音", "要乐奈", "长崎爽世", "椎名立希",
+    ]
+
     def __init__(self):
         super().__init__()
 
-        self.setStyleSheet(STYLE_QSS)
-
-        ui_file = QFile("ui/views/set_window.ui")
-        ui_file.open(QFile.ReadOnly)
-        self.ui = loader.load(ui_file)
-        ui_file.close()
-
         self.setWindowTitle("桌宠设置")
         self.setWindowIcon(QIcon("resource/display/ran.ico"))
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.ui)
-
-        # self.picture_choose: QPushButton = self.ui.findChild(QPushButton, "picture_choose")
-        # self.picture_choose.clicked.connect(self.choose_picture)
+        self.resize(520, 640)
+        self.setStyleSheet("""
+            SetWindow {
+                background-color: #F5F5F5;
+            }
+        """)
 
         self.character_id: int = 1
+        self.current_mode = self.MODE_MANUAL
 
-        self.size_slider: QSlider = self.ui.findChild(QSlider, "picture_resize")
+        # 滚动区域
+        scroll = SmoothScrollArea(self)
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            SmoothScrollArea {
+                border: none;
+                background-color: #F5F5F5;
+            }
+            QScrollBar:vertical {
+                background: transparent;
+                width: 8px;
+            }
+            QScrollBar::handle:vertical {
+                background: #CCCCCC;
+                border-radius: 4px;
+                min-height: 30px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #AAAAAA;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setSpacing(18)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setAlignment(Qt.AlignTop)
+
+        # 标题
+        title = SubtitleLabel("桌宠设置")
+        layout.addWidget(title)
+        layout.addWidget(BodyLabel("在这里调整桌宠的形象与行为"))
+
+        # ========== 快捷操作卡片 ==========
+        card_ops = CardWidget()
+        card_ops.setBorderRadius(10)
+        ops_layout = QHBoxLayout(card_ops)
+        ops_layout.setSpacing(12)
+        ops_layout.setContentsMargins(16, 16, 16, 16)
+
+        self.api_setting = PushButton("输入 Deepseek API")
+        self.character_setting = PushButton("导入人设文件")
+        ops_layout.addWidget(self.api_setting)
+        ops_layout.addWidget(self.character_setting)
+        layout.addWidget(card_ops)
+
+        # ========== 模式选择卡片 ==========
+        card_mode = CardWidget()
+        card_mode.setBorderRadius(10)
+        mode_main_layout = QVBoxLayout(card_mode)
+        mode_main_layout.setSpacing(12)
+        mode_main_layout.setContentsMargins(16, 16, 16, 16)
+
+        mode_main_layout.addWidget(StrongBodyLabel("随机模式"))
+        mode_main_layout.addWidget(BodyLabel("选择桌宠形象的切换方式"))
+
+        mode_inner = QVBoxLayout()
+        mode_inner.setSpacing(8)
+        self.radio_manual = RadioButton("手动选择")
+        self.radio_manual.setChecked(True)
+        self.radio_char_random = RadioButton("指定角色随机衣服")
+        self.radio_all_random = RadioButton("全部随机")
+        mode_inner.addWidget(self.radio_manual)
+        mode_inner.addWidget(self.radio_char_random)
+        mode_inner.addWidget(self.radio_all_random)
+        mode_main_layout.addLayout(mode_inner)
+
+        self.radio_manual.toggled.connect(
+            lambda checked: self.on_mode_changed(self.MODE_MANUAL) if checked else None
+        )
+        self.radio_char_random.toggled.connect(
+            lambda checked: self.on_mode_changed(self.MODE_CHAR_RANDOM) if checked else None
+        )
+        self.radio_all_random.toggled.connect(
+            lambda checked: self.on_mode_changed(self.MODE_ALL_RANDOM) if checked else None
+        )
+        layout.addWidget(card_mode)
+
+        # ========== 角色与服装卡片 ==========
+        card_char = CardWidget()
+        card_char.setBorderRadius(10)
+        char_layout = QVBoxLayout(card_char)
+        char_layout.setSpacing(14)
+        char_layout.setContentsMargins(16, 16, 16, 16)
+
+        char_layout.addWidget(StrongBodyLabel("形象设置"))
+
+        form = QFormLayout()
+        form.setSpacing(12)
+        form.setLabelAlignment(Qt.AlignLeft)
+        form.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+
+        self.character_choose = ComboBox()
+        self.character_choose.addItems(self.CHARACTER_NAMES)
+        self.character_choose.setCurrentIndex(0)
+        self.character_choose.currentIndexChanged.connect(self.update_character)
+
+        self.costume_choose = ComboBox()
+        self.costume_init()
+
+        self.confirm_costume = PrimaryPushButton("确认修改")
+        self.confirm_costume.setFixedWidth(120)
+        self.confirm_costume.clicked.connect(self.confirm_costume_clicked)
+
+        form.addRow("选择人物", self.character_choose)
+        form.addRow("服装选择", self.costume_choose)
+        form.addRow("", self.confirm_costume)
+        char_layout.addLayout(form)
+        layout.addWidget(card_char)
+
+        # ========== 缩放卡片 ==========
+        card_scale = CardWidget()
+        card_scale.setBorderRadius(10)
+        scale_layout = QVBoxLayout(card_scale)
+        scale_layout.setSpacing(12)
+        scale_layout.setContentsMargins(16, 16, 16, 16)
+
+        scale_layout.addWidget(StrongBodyLabel("图片缩放"))
+
+        self.size_slider = Slider(Qt.Horizontal)
         self.size_slider.setMinimum(10)
         self.size_slider.setMaximum(500)
         self.size_slider.setValue(100)
         self.size_slider.valueChanged.connect(self.update_size)
+        scale_layout.addWidget(self.size_slider)
 
-        self.character_choose: QComboBox = self.ui.findChild(QComboBox, "character")
-        self.character_choose.setCurrentIndex(0)
+        self.scale_label = BodyLabel("当前缩放: 100%")
+        self.scale_label.setAlignment(Qt.AlignCenter)
+        scale_layout.addWidget(self.scale_label)
 
-        self.costume_choose: QComboBox = self.ui.findChild(QComboBox, "costume")
-        self.costume_init()
+        layout.addWidget(card_scale)
+        layout.addStretch()
 
-        self.character_choose.currentIndexChanged.connect(self.update_character)
-
-        self.confirm_costume: QPushButton = self.ui.findChild(QPushButton, "confirm_costume")
-        self.confirm_costume.clicked.connect(self.confirm_costume_clicked)
-
-        # 模式选择
-        self.radio_manual: QRadioButton = self.ui.findChild(QRadioButton, "radio_manual")
-        self.radio_char_random: QRadioButton = self.ui.findChild(QRadioButton, "radio_char_random")
-        self.radio_all_random: QRadioButton = self.ui.findChild(QRadioButton, "radio_all_random")
-
-        self.radio_manual.toggled.connect(lambda checked: self.on_mode_changed(self.MODE_MANUAL) if checked else None)
-        self.radio_char_random.toggled.connect(lambda checked: self.on_mode_changed(self.MODE_CHAR_RANDOM) if checked else None)
-        self.radio_all_random.toggled.connect(lambda checked: self.on_mode_changed(self.MODE_ALL_RANDOM) if checked else None)
-
-        self.current_mode = self.MODE_MANUAL
+        scroll.setWidget(container)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(scroll)
 
     def update_size(self, value):
+        self.scale_label.setText(f"当前缩放: {value}%")
         self.sizeChanged.emit(value)
 
     def on_mode_changed(self, mode):
         self.current_mode = mode
-        # 根据模式控制控件的启用/禁用
         if mode == self.MODE_MANUAL:
             self.character_choose.setEnabled(True)
             self.costume_choose.setEnabled(True)
@@ -210,7 +212,6 @@ class SetWindow(QWidget):
             self.character_choose.setEnabled(False)
             self.costume_choose.setEnabled(False)
             self.confirm_costume.setEnabled(True)
-        # 发送模式变化信号
         self.modeChanged.emit(mode, self.character_id)
 
     def update_character(self, index):
@@ -221,9 +222,7 @@ class SetWindow(QWidget):
         self.costume_choose.blockSignals(False)
 
     def confirm_costume_clicked(self):
-        # 发送模式变化信号
         self.modeChanged.emit(self.current_mode, self.character_id)
-        # 如果是手动模式，还发送图片变化信号
         if self.current_mode == self.MODE_MANUAL:
             costume_id = int(self.costume_choose.currentText())
             self.imageChanged.emit(costume_id)
@@ -233,9 +232,8 @@ class SetWindow(QWidget):
             self,
             "选择图片",
             "",
-            "Images (*.png *.jpg);;All Files (*)" 
+            "Images (*.png *.jpg);;All Files (*)"
         )
-
         if file_path:
             print("[info] 选择的图片路径:", file_path)
             self.imageChanged.emit(file_path)
@@ -243,7 +241,7 @@ class SetWindow(QWidget):
     def costume_init(self):
         self.costume_choose.blockSignals(True)
         self.costume_choose.clear()
-        character : Character.Character = Character.Character(self.character_id)
+        character: Character.Character = Character.Character(self.character_id)
         costume_list = character.get_costume_list()
         self.costume_choose.addItems(costume_list)
         self.costume_choose.setCurrentIndex(0)
