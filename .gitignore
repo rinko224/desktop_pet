@@ -3,5 +3,5 @@
 *.pyc
 key
 
-user.json
-cache.png
+resource/config/user.json
+resource/config/cache.png
